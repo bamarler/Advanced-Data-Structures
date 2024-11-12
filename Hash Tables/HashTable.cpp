@@ -1,4 +1,3 @@
-#include "HashTable.h"
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -6,14 +5,56 @@
 #include <map>
 #include <algorithm>
 #include <random>
+#include <fstream>
+#include <sstream>
+#include <cctype>
+using namespace std;
+
+class Node {
+    public:
+        string key;
+        int value;
+        Node* next;
+
+        Node(const string& key, int value = 1, Node* next = nullptr)
+            : key(key), value(value), next(next) {}
+};
+
+class HashTable {
+    public:
+        HashTable(int size);
+        ~HashTable();
+
+        void insert(const string& key, int value);
+        bool deleteKey(const string& key);
+        bool increase(const string& key, int value);
+        int find(const string& key) const;
+        void listAllKeys() const;
+        vector<int> calculateCollisionLengths();
+        void printCollisionsHistogram();
+        double calculateVariance();
+        void printLongestLists();
+    
+    private:
+        int hashFunction(const string& key) const;
+        int randomHash(const string& key) const;
+        int murmurHash(const string& key) const;
+        vector<Node*> table;
+        int size;
+
+        int a;
+        int b;
+
+        uint32_t seed;
+};
 
 // prime number to be used for randomization and hashing
 const int PRIME = 10000019;
 
 HashTable::HashTable(int size) : size(size), table(size, nullptr) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(1, PRIME-1);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dist(1, PRIME-1);
 
     // initialize constants for randomHash
     a = dist(gen);
@@ -35,11 +76,11 @@ HashTable::~HashTable() {
     }
 }
 
-int HashTable::hashFunction(const std::string& key) const {
+int HashTable::hashFunction(const string& key) const {
     return murmurHash(key);
 }
 
-int HashTable::randomHash(const std::string& key) const {
+int HashTable::randomHash(const string& key) const {
     unsigned long hashValue = 0;
     
     // Position sensitive hashing ("abc" and "cba" produce different values)
@@ -54,7 +95,7 @@ int HashTable::randomHash(const std::string& key) const {
     return hashValue % size;
 }
 
-int HashTable::murmurHash(const std::string& key) const {    
+int HashTable::murmurHash(const string& key) const {    
     uint32_t hash = seed;
 
     for (char c : key) {
@@ -79,7 +120,7 @@ int HashTable::murmurHash(const std::string& key) const {
     return hash % size;
 }
 
-void HashTable::insert(const std::string& key, int value) {
+void HashTable::insert(const string& key, int value) {
     if (find(key) != -1) {
         increase(key, value);
     } else {
@@ -91,7 +132,7 @@ void HashTable::insert(const std::string& key, int value) {
     }
 }
 
-bool HashTable::deleteKey(const std::string& key) {
+bool HashTable::deleteKey(const string& key) {
     int index = hashFunction(key);
     Node* current = table[index];
     Node* previous = nullptr;
@@ -115,7 +156,7 @@ bool HashTable::deleteKey(const std::string& key) {
     return false;
 }
 
-bool HashTable::increase(const std::string& key, int value) {
+bool HashTable::increase(const string& key, int value) {
     int index = hashFunction(key);
     Node* current = table[index];
 
@@ -131,7 +172,7 @@ bool HashTable::increase(const std::string& key, int value) {
     return false;
 }
 
-int HashTable::find(const std::string& key) const {
+int HashTable::find(const string& key) const {
     int index = hashFunction(key);
     Node* current = table[index];
 
@@ -150,14 +191,14 @@ void HashTable::listAllKeys() const {
         Node* current = head;
 
         while (current != nullptr) {
-            std::cout << "Key: " << current->key << ", Value: " << current->value << std::endl;
+            cout << "Key: " << current->key << ", Value: " << current->value << endl;
             current = current->next;
         }
     }
 }
 
-std::vector<int> HashTable::calculateCollisionLengths() {
-    std::vector<int> lengths;
+vector<int> HashTable::calculateCollisionLengths() {
+    vector<int> lengths;
 
     for (Node* head : table) {
         int length = 0;
@@ -175,21 +216,21 @@ std::vector<int> HashTable::calculateCollisionLengths() {
 }
 
 void HashTable::printCollisionsHistogram() {
-    std::vector<int> lengths = calculateCollisionLengths();
+    vector<int> lengths = calculateCollisionLengths();
 
     for (int length : lengths) {
-        std::cout << " | ";
+        cout << " | ";
         for (int i = 0; i < length; ++i) {
-            std::cout << "*";
+            cout << "*";
         }
-        std::cout << " (" << length << ")" << std::endl;
+        cout << " (" << length << ")" << endl;
     }
 }
 
 double HashTable::calculateVariance() {
-    std::vector<int> lengths = calculateCollisionLengths();
+    vector<int> lengths = calculateCollisionLengths();
 
-    double mean = std::accumulate(lengths.begin(), lengths.end(), 0.0) / lengths.size();
+    double mean = accumulate(lengths.begin(), lengths.end(), 0.0) / lengths.size();
     double variance = 0;
     for (int length : lengths) {
         variance += (length - mean) * (length - mean);
@@ -200,12 +241,46 @@ double HashTable::calculateVariance() {
 }
 
 void HashTable::printLongestLists() {
-    std::vector<int> lengths = calculateCollisionLengths();
+    vector<int> lengths = calculateCollisionLengths();
 
-    std::sort(lengths.begin(), lengths.end(), std::greater<int>());
-    std::cout << "Lengths of the 10% longest lists are: ";
+    sort(lengths.begin(), lengths.end(), greater<int>());
+    cout << "Lengths of the 10% longest lists are: ";
     for (int i = 0; i < lengths.size() / 10; ++i) {
-        std::cout << lengths[i] << " ";
+        cout << lengths[i] << " ";
     }
-    std::cout << std::endl;
+    cout << endl;
+}
+
+void loadFileIntoHashTable(const string& filename, HashTable& hashTable) {
+    ifstream file(filename);
+    string line;
+    string word;
+
+    while (getline(file,line)) {
+        istringstream iss(line);
+        while (iss >> word) {
+            // Normalize the word (convert to lowercase and remove punctuation)
+            word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+            transform(word.begin(), word.end(), word.begin(), ::tolower);
+            
+            // Insert the word into the hash table
+            hashTable.insert(word, 1);
+        }
+    }
+}
+
+int main() {
+    int m = 300;
+
+    HashTable hashTable = HashTable(m);
+
+    loadFileIntoHashTable("alice_in_wonderland.txt", hashTable);
+
+    cout << "Testing with m = " << m << endl;
+
+    hashTable.printCollisionsHistogram();
+
+    cout << "\nVariance of collision list lengths: " << hashTable.calculateVariance() << "\n" << endl;
+
+    hashTable.printLongestLists();
 }
