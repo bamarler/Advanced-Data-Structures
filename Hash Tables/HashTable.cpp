@@ -3,20 +3,24 @@
 #include <vector>
 #include <cmath>
 #include <numeric>
+#include <map>
 #include <algorithm>
 #include <random>
 
-// prime number to be used for hashing
+// prime number to be used for randomization and hashing
 const int PRIME = 10000019;
 
 HashTable::HashTable(int size) : size(size), table(size, nullptr) {
-    // Produce random constants for hashing
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dist(1, PRIME-1);
 
+    // initialize constants for randomHash
     a = dist(gen);
     b = dist(gen);
+
+    // initialize seed for murmurHash
+    seed = static_cast<uint32_t>(dist(gen));
 }
 
 // Clears the entire HashTable from memory
@@ -32,6 +36,10 @@ HashTable::~HashTable() {
 }
 
 int HashTable::hashFunction(const std::string& key) const {
+    return murmurHash(key);
+}
+
+int HashTable::randomHash(const std::string& key) const {
     unsigned long hashValue = 0;
     
     // Position sensitive hashing ("abc" and "cba" produce different values)
@@ -44,6 +52,31 @@ int HashTable::hashFunction(const std::string& key) const {
 
     // produce a final value within our size
     return hashValue % size;
+}
+
+int HashTable::murmurHash(const std::string& key) const {    
+    uint32_t hash = seed;
+
+    for (char c : key) {
+        uint32_t k = static_cast<uint32_t>(c);
+
+        k *= 0xcc9e2d51;
+        k = (k << 15) | (k >> 17);
+        k *= 0x1b873593;
+
+        hash ^= k;
+        hash = (hash << 13) | (hash >> 19);
+        hash = hash * 5 + 0xe6546b64;
+    }
+
+    hash ^= key.length();
+    hash ^= (hash >> 16);
+    hash *= 0x85ebca6b;
+    hash ^= (hash >> 13);
+    hash *= 0xc2b2ae35;
+    hash ^= (hash >> 16);
+
+    return hash % size;
 }
 
 void HashTable::insert(const std::string& key, int value) {
@@ -141,6 +174,18 @@ std::vector<int> HashTable::calculateCollisionLengths() {
     return lengths;
 }
 
+void HashTable::printCollisionsHistogram() {
+    std::vector<int> lengths = calculateCollisionLengths();
+
+    for (int length : lengths) {
+        std::cout << " | ";
+        for (int i = 0; i < length; ++i) {
+            std::cout << "*";
+        }
+        std::cout << " (" << length << ")" << std::endl;
+    }
+}
+
 double HashTable::calculateVariance() {
     std::vector<int> lengths = calculateCollisionLengths();
 
@@ -150,7 +195,7 @@ double HashTable::calculateVariance() {
         variance += (length - mean) * (length - mean);
     }
 
-    return std::sqrt(variance / lengths.size());
+    return variance / lengths.size();
 
 }
 

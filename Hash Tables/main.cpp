@@ -26,19 +26,16 @@ void loadFileIntoHashTable(const std::string& filename, HashTable& hashTable) {
 
 int main() {
     int m = 1000;
+
     HashTable hashTable = HashTable(m);
 
     loadFileIntoHashTable("alice_in_wonderland.txt", hashTable);
 
     std::cout << "Testing with m = " << m << std::endl;
 
-    std::vector<int> lengths = hashTable.calculateCollisionLengths();
-    for (int length : lengths) {
-        std::cout << length << " ";
-    }
-    std::cout << "\n" << std::endl;
+    hashTable.printCollisionsHistogram();
 
-    std::cout << "Variance of collision list lengths: " << hashTable.calculateVariance() << "\n" << std::endl;
+    std::cout << "\nVariance of collision list lengths: " << hashTable.calculateVariance() << "\n" << std::endl;
 
     hashTable.printLongestLists();
 }
