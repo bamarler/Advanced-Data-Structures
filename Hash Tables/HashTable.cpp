@@ -218,12 +218,35 @@ vector<int> HashTable::calculateCollisionLengths() {
 void HashTable::printCollisionsHistogram() {
     vector<int> lengths = calculateCollisionLengths();
 
+    int min = INT_MAX;
+    int max = INT_MIN;
     for (int length : lengths) {
-        cout << " | ";
-        for (int i = 0; i < length; ++i) {
+        if (length < min) {
+            min = length;
+        }
+        if (length > max) {
+            max = length;
+        }
+    }
+
+    vector<int> buckets(max + 1, 0);
+
+    for (int length : lengths) {
+        ++buckets[length];
+    }
+
+    int i = 0;
+    while (buckets[i] == 0) {
+        ++i;
+    }
+
+    while (i < max + 1) {
+        cout << i << " | ";
+        for (int j = 0; j < buckets[i]; j+=1) {
             cout << "*";
         }
-        cout << " (" << length << ")" << endl;
+        cout << " (" << buckets[i] << ")" << endl;
+        ++i;
     }
 }
 
@@ -231,14 +254,12 @@ double HashTable::calculateVariance() {
     vector<int> lengths = calculateCollisionLengths();
 
     double mean = accumulate(lengths.begin(), lengths.end(), 0.0) / lengths.size();
-    cout << mean << endl;
     double variance = 0;
     for (int length : lengths) {
         variance += (length - mean) * (length - mean);
     }
 
     return variance / lengths.size();
-
 }
 
 void HashTable::printLongestLists() {
@@ -271,14 +292,17 @@ void loadFileIntoHashTable(const string& filename, HashTable& hashTable) {
 }
 
 int main() {
-    int m = 30;
+    int m;
+    cout << "Enter the size of the Hash table: ";
+    cin >> m;
 
     HashTable hashTable = HashTable(m);
 
     loadFileIntoHashTable("alice_in_wonderland.txt", hashTable);
 
-    cout << "Testing with m = " << m << endl;
+    cout << "\nReading Alice in Wonderland..." << endl;
 
+    cout << "\nHistogram of Collision Lists' Lengths:" << endl;
     hashTable.printCollisionsHistogram();
 
     cout << "\nVariance of collision list lengths: " << hashTable.calculateVariance() << "\n" << endl;

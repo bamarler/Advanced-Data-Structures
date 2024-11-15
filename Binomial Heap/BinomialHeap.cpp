@@ -1,6 +1,7 @@
 #include <iostream>
 #include <climits>
 #include <vector>
+#include <queue>
 
 using namespace std;
 
@@ -99,7 +100,6 @@ void BinomialHeap::decreaseKey(Node* node, int newKey) {
 
 void BinomialHeap::deleteNode(Node* node) {
     decreaseKey(node, INT_MIN);
-
     extractMin();
 }
 
@@ -141,37 +141,31 @@ void BinomialHeap::unionHeaps(BinomialHeap* other) {
 void BinomialHeap::printTree(Node* root, int level = 0) {
     if (!root) return;
 
-    // Print the root key and its immediate children on the same line
-    cout << string(level * 2, ' ') << root->key;
+    // Create a queue to hold nodes and their corresponding levels and indentation strings
+    queue<pair<Node*, string>> nodeQueue;
+    nodeQueue.push({root, ""}); // Root node with no indentation
 
-    Node* child = root->child;
-    if (child) {
-        cout << " -- " << child->key; // Print the first child of the root
-        child = child->sibling;
-    }
+    while (!nodeQueue.empty()) {
+        auto [node, indent] = nodeQueue.front();
+        nodeQueue.pop();
 
-    // Print remaining siblings of the first child, if any
-    while (child) {
-        cout << " -- " << child->key;
-        child = child->sibling;
-    }
-    cout << endl;
+        // Print the current node with its indentation
+        cout << indent << "|-- Key: " << node->key << " (Order: " << node->order << ")" << endl;
 
-    // Move to the next level for each child and print their subtree
-    child = root->child;
-    while (child) {
-        // Print the vertical '|' line with indentation for child levels
-        cout << string(level * 2, ' ') << "| ";
-        
-        // Recursive call to print each child's subtree
-        printTree(child, level + 1);
-        child = child->sibling;
+        // Add child nodes with appropriate indentation
+        if (node->child) {
+            Node* child = node->child;
+            string childIndent = indent + "    "; // Indent further for child nodes
+
+            while (child) {
+                nodeQueue.push({child, childIndent});
+                child = child->sibling;
+            }
+        }
     }
 }
 
 void BinomialHeap::printHeap() {
-    cout << "Binomial Heap:" << endl;
-
     Node* current = head;
     int treeIndex = 1;
 
@@ -231,7 +225,7 @@ void loadArrayIntoBinomialHeap(const vector<int>& arr, BinomialHeap* heap) {
 
 int main() {
     int m;
-    cout << "Enter the number of elements (m) to test: ";
+    cout << "Enter the number of elements to test: ";
     cin >> m;
 
     // Generate an array of random integers of length m
@@ -252,6 +246,7 @@ int main() {
     cout << "\nHeap after all insertions:" << endl;
     heap.printHeap();
 
+    /*
     // Find the minimum element in the heap
     Node* minNode = heap.minimum();
     if (minNode) {
@@ -267,30 +262,6 @@ int main() {
         }
         heap.extractMin();
         heap.printHeap();
-    }
-
-    // Optionally, demonstrate decreaseKey and deleteNode here
-    // Uncomment the lines below to test:
-    /*
-    if (m > 0) {
-        // Re-insert elements to demonstrate decreaseKey and deleteNode
-        loadArrayIntoBinomialHeap(arr, &heap);
-
-        // Example decreaseKey: decrease the minimum node's key to 5
-        minNode = heap.minimum();
-        if (minNode) {
-            cout << "\nDecreasing key of node with key " << minNode->key << " to 5" << endl;
-            heap.decreaseKey(minNode, 5);
-            printHeapSideways(&heap);
-        }
-
-        // Example deleteNode: delete the node with key 5
-        Node* nodeToDelete = heap.minimum(); // For simplicity, delete the new minimum
-        if (nodeToDelete) {
-            cout << "\nDeleting node with key " << nodeToDelete->key << endl;
-            heap.deleteNode(nodeToDelete);
-            printHeapSideways(&heap);
-        }
     }
     */
 
