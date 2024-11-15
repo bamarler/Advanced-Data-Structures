@@ -77,7 +77,7 @@ HashTable::~HashTable() {
 }
 
 int HashTable::hashFunction(const string& key) const {
-    return murmurHash(key);
+    return randomHash(key);
 }
 
 int HashTable::randomHash(const string& key) const {
@@ -231,6 +231,7 @@ double HashTable::calculateVariance() {
     vector<int> lengths = calculateCollisionLengths();
 
     double mean = accumulate(lengths.begin(), lengths.end(), 0.0) / lengths.size();
+    cout << mean << endl;
     double variance = 0;
     for (int length : lengths) {
         variance += (length - mean) * (length - mean);
@@ -270,7 +271,7 @@ void loadFileIntoHashTable(const string& filename, HashTable& hashTable) {
 }
 
 int main() {
-    int m = 300;
+    int m = 30;
 
     HashTable hashTable = HashTable(m);
 
