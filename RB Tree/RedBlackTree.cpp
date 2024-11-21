@@ -23,7 +23,6 @@ class RedBlackTree {
 
         RedBlackTree() : root(nullptr) {}
 
-        void sort(Node* x);
         Node* search(Node* x, int target);
         Node* min(Node* x);
         Node* max(Node* x);
@@ -31,21 +30,15 @@ class RedBlackTree {
         Node* predecessor(Node* x);
         void insert(int key);
         void deleteNode(Node* target);
-        void printTree();
+        void inlineWalk(Node* x);
+        void layeredWalk(Node* x);
     
     private:
         void leftRotate(Node* x);
         void rightRotate(Node* y);
         void insertFixup(Node* z);
+        void transplant(Node* u, Node* v);
 };
-
-void RedBlackTree::sort(Node* x) {
-    if (x) {
-        sort(x->left);
-        cout << x->key << " ";
-        sort(x->right);
-    }
-}
 
 Node* RedBlackTree::search(Node* x, int target) {
     while (x && (target != x->key)) {
@@ -115,6 +108,8 @@ void RedBlackTree::insert(int key) {
     z->parent = y;
     if (!y) {
         root = z;
+        root->color = BLACK;
+        return;
     }
     else if (z->key < y->key) {
         y->left = z;
@@ -123,6 +118,43 @@ void RedBlackTree::insert(int key) {
         y->right = z;
     }
     insertFixup(z);
+}
+
+void RedBlackTree::deleteNode(Node* z) {
+    if (!z->left) {
+        transplant(z, z->right);
+    }
+    else if (!z->right) {
+        transplant(z, z->left);
+    }
+    else {
+        Node* y = min(z->right);
+        if (y != z->right) {
+            transplant(y, y->right);
+            y->right = z->right;
+            y->right->parent = y;
+        }
+        transplant(z, y);
+        y->left = z->left;
+        y->left->parent = y;
+    }  
+}
+
+void RedBlackTree::inlineWalk(Node* x) {
+    if (x) {
+        inlineWalk(x->left);
+        cout << x->key << "(" << x->color << ") ";
+        inlineWalk(x->right);
+    }
+}
+
+void RedBlackTree::layeredWalk(Node* x) {
+    if (x) {
+        cout << " " << x->key << " ";
+        layeredWalk(x->left);
+        layeredWalk(x->right);
+        cout << endl;
+    }
 }
 
 void RedBlackTree::leftRotate(Node* x) {
@@ -166,7 +198,7 @@ void RedBlackTree::rightRotate(Node* y) {
 }
 
 void RedBlackTree::insertFixup(Node* z) {
-    while (z->parent->color == RED) {
+    while (z && z->parent && z->parent->parent && z->parent->color == RED) {
         if (z->parent == z->parent->parent->left) {
             Node* y = z->parent->parent->right;
             if (y->color == RED) {
@@ -203,13 +235,62 @@ void RedBlackTree::insertFixup(Node* z) {
                 leftRotate(z->parent->parent);
             }
         }
+        cout << "Root Key: " << root << "Root Color: " << endl;
     }
     root->color = BLACK;
 }
 
-void loadArrayIntoRBTree(const vector<int>& arr, RedBlackTree* rb) {
-    for (int num : arr) {
-        cout << "Inserting " << num << " into the heap." << endl;
-        rb->insert(num);
+void RedBlackTree::transplant(Node* u, Node* v) {
+    if (!u->parent) {
+        root = v;
     }
+    else if (u == u->parent->left) {
+        u->parent->left = v;
+    }
+    if (v) {
+        v->parent = u->parent;
+    }
+}
+
+void loadArrayIntoRBTree(const vector<int>& arr, RedBlackTree &rb) {
+    for (int num : arr) {
+        cout << "Inserting " << num << " into the Tree." << endl;
+        rb.insert(num);
+    }
+}
+
+int main() {
+    int m;
+    cout << "Enter the number of elements to test: ";
+    cin >> m;
+
+    // Generate an array of random integers of length m
+    vector<int> arr;
+    srand(time(0)); // Seed the random number generator
+    for (int i = 0; i < m; ++i) {
+        int randomNum = rand() % 100; // Random numbers between 0 and 99
+        arr.push_back(randomNum);
+    }
+
+    RedBlackTree rbTree;
+
+    loadArrayIntoRBTree(arr, rbTree);
+
+    cout << "Print In Line Walk: ";
+    rbTree.inlineWalk(rbTree.root);
+
+    RedBlackTree rbTree2;
+
+    cout << "\n\nPrint Test In LIne Walk: ";
+
+    rbTree2.insert(11);
+    rbTree2.insert(7);
+    rbTree2.insert(15);
+    rbTree2.insert(5);
+
+    rbTree2.inlineWalk(rbTree2.root);
+
+    cout << "\n Successor 11: " << rbTree2.successor(rbTree2.search(rbTree2.root, 11))->key;
+
+    return 0;
 }

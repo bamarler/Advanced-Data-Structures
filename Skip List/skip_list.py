@@ -129,35 +129,45 @@ class SkipList:
 
 
         for row in matrix:
-            print(" | ".join(row))
+            print("  ".join(row))
         
         print("\n")
 
 
-SL = SkipList(10)
+def main():
+    max_level = int(input("What do you want the max height to be? "))
+    skiplist = SkipList(max_level)
 
-SL.insert(20)
-SL.visualize()
-SL.insert(40)
-SL.visualize()
-SL.insert(10)
-SL.visualize()
-SL.insert(20)
-SL.visualize()
-SL.insert(5)
-SL.visualize()
-SL.insert(80)
-SL.visualize()
-SL.delete(20)
-SL.visualize()
-SL.insert(100)
-SL.visualize()
-SL.insert(20)
-SL.visualize()
-SL.insert(30)
-SL.visualize()
-SL.delete(5)
-SL.visualize()
-SL.insert(50)
-SL.visualize()
-SL.lookup(80)
+    # Initialize the skiplist with random elements
+    initial_count = int(input("How many elements do you want to initially insert? "))
+    initial_elements = [random.randint(1, 100) for _ in range(initial_count)]
+    print(f"Generated elements: {initial_elements}")
+
+    for elem in initial_elements:
+        skiplist.insert(elem)
+
+    print("\nInitial SkipList:")
+    skiplist.visualize()
+
+    # Interactive loop
+    while True:
+        command = input("Enter a command ('insert', 'delete', or press Enter to exit): ").strip().lower()
+        if not command:
+            print("Exiting...")
+            break
+
+        if command == "insert":
+            value = int(input("Enter a value to insert: "))
+            skiplist.insert(value)
+            print(f"Inserted {value}. Updated SkipList:")
+        elif command == "delete":
+            value = int(input("Enter a value to delete: "))
+            skiplist.delete(value)
+            print(f"Deleted {value}. Updated SkipList:")
+        else:
+            print("Invalid command. Please enter 'insert' or 'delete'.")
+
+        skiplist.visualize()
+
+if __name__ == "__main__":
+    main()
