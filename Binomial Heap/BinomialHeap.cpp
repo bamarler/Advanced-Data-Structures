@@ -23,14 +23,16 @@ class BinomialHeap {
         BinomialHeap() : head(nullptr) {}
 
         void insert(int key);
+        Node* search(int key);
         Node* minimum();
         void extractMin();
         void decreaseKey(Node* node, int newKey);
-        void deleteNode(Node* node);
+        void deleteNode(int key);
         void unionHeaps(BinomialHeap* other);
         void printTree(Node* root, int level);
         void printHeap();
     private:
+        Node* searchHelp(int key, Node* current);
         // links two trees of the same order
         void mergeTrees(Node* y, Node*);
         Node* mergeRoots(Node* h1, Node* h2);
@@ -42,6 +44,28 @@ void BinomialHeap::insert(int key) {
     newHeap.head = newNode;
 
     unionHeaps(&newHeap);
+}
+
+Node* BinomialHeap::search(int key) {
+    Node* current = head;
+    return searchHelp(key, current);
+}
+
+Node* BinomialHeap::searchHelp(int key, Node* current) {
+    if (current) {
+        if (current->key == key) {
+            return current;
+        }
+        Node* child = searchHelp(key, current->child);
+        Node* sibling = searchHelp(key, current->sibling);
+        if (child) {
+            return child;
+        }
+        else if (sibling) {
+            return sibling;
+        }
+    }
+    return nullptr;
 }
 
 Node* BinomialHeap::minimum() {
@@ -80,27 +104,46 @@ void BinomialHeap::extractMin() {
     BinomialHeap subtrees;
     subtrees.head = min->child;
 
+    vector<Node*> nodes;
+    Node* head = subtrees.head;
+    while (head) {
+        nodes.push_back(head);
+        head = head->sibling;
+    }
+
+    subtrees.head = nodes[nodes.size()-1];
+
+    for (int i = nodes.size() - 1; i >= 1; i--) {
+        nodes[i]->sibling = nodes[i-1];
+    }
+    nodes[0]->sibling = nullptr;
+    
     unionHeaps(&subtrees);    
 
     delete min;
 }
 
 void BinomialHeap::decreaseKey(Node* node, int newKey) {
-    node->key = newKey;
+    if (node) {
+        node->key = newKey;
 
-    while (node->key < node->parent->key) {
-        int k = node->key;
+        while (node->parent && node->key < node->parent->key) {
+            int k = node->key;
 
-        node->key = node->parent->key;
-        node->parent->key = k;
+            node->key = node->parent->key;
+            node->parent->key = k;
 
-        node = node->parent;
+            node = node->parent;
+        }
     }
 }
 
-void BinomialHeap::deleteNode(Node* node) {
-    decreaseKey(node, INT_MIN);
-    extractMin();
+void BinomialHeap::deleteNode(int key) {
+    Node* node = search(key);
+    if (node) {
+        decreaseKey(node, INT_MIN);
+        extractMin();
+    }
 }
 
 void BinomialHeap::unionHeaps(BinomialHeap* other) {
@@ -184,7 +227,7 @@ void BinomialHeap::mergeTrees(Node* y, Node* z) {
     z->order++;
 }
 
-Node* BinomialHeap::mergeRoots(Node* h1, Node* h2) {
+Node* BinomialHeap::mergeRoots(Node* h2, Node* h1) {
     if (!h1) return h2;
     if (!h2) return h1;
 
@@ -246,24 +289,53 @@ int main() {
     cout << "\nHeap after all insertions:" << endl;
     heap.printHeap();
 
-    /*
-    // Find the minimum element in the heap
-    Node* minNode = heap.minimum();
-    if (minNode) {
-        cout << "Minimum element in the heap: " << minNode->key << endl;
-    }
+    bool running = true;
 
-    // Extract the minimum element and print the heap after each extraction
-    cout << "\nExtracting minimum elements:" << endl;
-    while (heap.head) {
-        minNode = heap.minimum();
-        if (minNode) {
-            cout << "Minimum element: " << minNode->key << endl;
+    while (running) {
+        cout << "\nWhat do you want to do? (Insert, Minimum, ExtractMin, DecreaseKey, DeleteNode, end)" << endl;
+        string command;
+        cin >> command;
+
+        if (command == "Insert") {
+            int key;
+            cout << "Enter the key to insert: ";
+            cin >> key;
+            heap.insert(key);
+            heap.printHeap();
         }
-        heap.extractMin();
-        heap.printHeap();
+        else if (command == "Minimum") {
+            Node* min = heap.minimum();
+            if (min) cout << "Minimum key: " << min->key << endl;
+            else cout << "Heap is empty." << endl;
+        }
+        else if (command == "ExtractMin") {
+            heap.extractMin();
+            cout << "Minimum element extracted." << endl;
+            heap.printHeap();
+        }
+        else if (command == "DecreaseKey") {
+            int key, newKey;
+            cout << "Enter the key to decrease: ";
+            cin >> key;
+            cout << "Enter the new key: ";
+            cin >> newKey;
+            heap.decreaseKey(heap.search(key), newKey);
+            heap.printHeap();
+        }
+        else if (command == "DeleteNode") {
+            int key;
+            cout << "Enter the key to delete: ";
+            cin >> key;
+            heap.deleteNode(key);
+            heap.printHeap();
+        }
+        else if (command == "end") {
+            running = false;
+        }
+        else {
+            cout << "Invalid command." << endl;
+        }
     }
-    */
 
     return 0;
 }
