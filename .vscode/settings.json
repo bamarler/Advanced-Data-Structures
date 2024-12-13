@@ -57,5 +57,8 @@
         "xutility": "cpp",
         "numeric": "cpp",
         "queue": "cpp"
-    }
+    },
+    "C_Cpp.default.includePath": [
+        "C:/boost_1_xx_0/boost_1_87_0"
+    ]
 }
