@@ -16,6 +16,45 @@ typedef adjacency_list<vecS, vecS, directedS,
 typedef Traits::vertex_descriptor Vertex;
 typedef Traits::edge_descriptor Edge;
 
+void addEdge(Vertex u, Vertex v, int cap, Graph& g) {
+    property_map<Graph, edge_capacity_t>::type capacity = get(edge_capacity, g);
+    property_map<Graph, edge_residual_capacity_t>::type residual_capacity = get(edge_residual_capacity, g);
+    property_map<Graph, edge_reverse_t>::type rev = get(edge_reverse, g);
+
+    Edge e1, e2;
+    bool inserted1, inserted2;
+    tie(e1, inserted1) = add_edge(u, v, g);
+    tie(e2, inserted2) = add_edge(v, u, g);
+    capacity[e1] = cap;
+    capacity[e2] = 0;
+    residual_capacity[e1] = cap;
+    residual_capacity[e2] = 0;
+    rev[e1] = e2;
+    rev[e2] = e1;
+}
+
+void print_capacities(Graph& g) {
+    property_map<Graph, edge_capacity_t>::type capacity = get(edge_capacity, g);
+    cout << "Capacities:\n";
+    for (auto e : make_iterator_range(edges(g))) {
+        if (capacity[e] > 0) {
+            cout << source(e, g) << " -> " << target(e, g) << " : " << capacity[e] << "\n";
+        }
+    }
+}
+
+void print_residuals(Graph& g) {
+    property_map<Graph, edge_capacity_t>::type capacity = get(edge_capacity, g);
+    property_map<Graph, edge_residual_capacity_t>::type residual_capacity = get(edge_residual_capacity, g);
+
+    cout << "Residuals:\n";
+    for (auto e : make_iterator_range(edges(g))) {
+        if (capacity[e] > 0) {
+            cout << source(e, g) << " -> " << target(e, g) << " : " << capacity[e] - residual_capacity[e] << "\n";
+        }
+    }
+}
+
 int push_relabel(Graph& g, Vertex source, Vertex sink) {
     property_map<Graph, edge_capacity_t>::type capacity = get(edge_capacity, g);
     property_map<Graph, edge_residual_capacity_t>::type residual_capacity = get(edge_residual_capacity, g);
@@ -26,26 +65,31 @@ int push_relabel(Graph& g, Vertex source, Vertex sink) {
     vector<int> excess(V);
     vector<int> height(V);
 
-    auto push = [&](Vertex u, Vertex v) {
-        Edge e; bool exists;
-        tie(e, exists) = edge(u, v, g);
+    auto push = [&](Vertex u, Vertex v, Edge e) {
+        //Edge e; bool exists;
+        //tie(e, exists) = edge(u, v, g);
 
-        if (!exists) return;
-        if (residual_capacity[e] <= 0) return;
-        if (height[u] != height[v] + 1) return;
+        //cout << "Pushing " << u << " to " << v << " with residual capacity " << residual_capacity[e] << endl;
+
+        //if (!exists) return;
+        //if (residual_capacity[e] <= 0) return;
+        //if (height[u] != height[v] + 1) return;
 
         int delta = min(excess[u], residual_capacity[e]);
-        if (capacity[e] > 0) {
+        /*if (capacity[e] > 0) {
             residual_capacity[e] -= delta;
         }
         else {
             residual_capacity[rev[e]] += delta;
-        }
+        } */
+
+       residual_capacity[e] -= delta;
+       residual_capacity[rev[e]] += delta;
 
         excess[u] -= delta;
         excess[v] += delta;
 
-        cout << "Pushed " << delta << " units of flow from " << u << " to " << v << endl;
+        //cout << "Pushed " << delta << " units of flow from " << u << " to " << v << endl;
     };
 
     auto relabel = [&](Vertex u) {
@@ -58,7 +102,7 @@ int push_relabel(Graph& g, Vertex source, Vertex sink) {
         if (min_height < INT_MAX) {
             height[u] = min_height + 1;
         }
-        cout << "Relabeled " << u << " to height " << height[u] << endl;
+        //cout << "Relabeled " << u << " to height " << height[u] << endl;
     };
 
     auto initialize_preflow = [&](Vertex s) {
@@ -85,7 +129,7 @@ int push_relabel(Graph& g, Vertex source, Vertex sink) {
     for (Vertex u : make_iterator_range(vertices(g))) {
         if (u != source && u != sink && excess[u] > 0) {
             active.push(u);
-            cout << "Queued " << u << endl;
+            //cout << "Queued " << u << endl;
         }
     }
 
@@ -96,24 +140,33 @@ int push_relabel(Graph& g, Vertex source, Vertex sink) {
         bool pushed = false;
         for (auto e : make_iterator_range(out_edges(u, g))) {
             Vertex v = target(e, g);
+            //cout << "Checking edge " << u << " -> " << v << " with residual capacity " << residual_capacity[e] << endl;
             if (residual_capacity[e] > 0 && height[u] == height[v] + 1) {
-                push(u, v);
+                //cout << "Pushing " << u << " to " << v << " with residual capacity " << residual_capacity[e] << endl;
+                push(u, v, e);
                 pushed = true;
                 if (excess[u] > 0) {
                     active.push(u);
-                    cout << "Queued " << u << endl;
+                    //cout << "1 Queued " << u << " with excess " << excess[u] << endl;
                 }
             }
             if (v != source && v != sink && excess[v] > 0) {
                 active.push(v);
-                cout << "Queued " << v  << endl;
+                //cout << "2 Queued " << v << " with excess " << excess[v] << endl;
             }
         }
-        if (!pushed) {
+        if (!pushed && excess[u] > 0) {
             relabel(u);
             active.push(u);
-            cout << "Queued " << u << endl;
+            //cout << "3 Queued " << u << " with excess " << excess[u] << endl;
         }
+        /*for (Vertex v : make_iterator_range(vertices(g))) {
+            if (v != source && v != sink && excess[v] > 0) {
+                active.push(v);
+                //cout << "4 Queued " << v << " with excess " << excess[v] << endl;
+            }
+        } */
+        //print_residuals(g);
     }
 
     int max_flow = 0;
@@ -125,19 +178,6 @@ int push_relabel(Graph& g, Vertex source, Vertex sink) {
 
 int main() {
     Graph g;
-    property_map<Graph, edge_capacity_t>::type capacity = get(edge_capacity, g);
-    property_map<Graph, edge_reverse_t>::type rev = get(edge_reverse, g);
-
-    auto addEdge = [&](Vertex u, Vertex v, int cap, Graph& g) {
-        Edge e1, e2;
-        bool inserted1, inserted2;
-        tie(e1, inserted1) = add_edge(u, v, g);
-        tie(e2, inserted2) = add_edge(v, u, g);
-        capacity[e1] = cap;
-        capacity[e2] = 0;  // Reverse edge has zero initial capacity
-        rev[e1] = e2;
-        rev[e2] = e1;
-    };
 
     // Example 1:
     Vertex A = add_vertex(g);
@@ -147,42 +187,72 @@ int main() {
     addEdge(A, B, 10, g);
     addEdge(B, C, 5, g);
 
+    print_capacities(g);
+
     Vertex source = A, sink = C;
     int eFlow = push_relabel_max_flow(g, source, sink);
-    cout << "Expected Max Flow from 0 to 2: " << eFlow << "\n";
+    cout << "Expected Max Flow from Graph 1: " << eFlow << "\n";
+    print_residuals(g);
 
     int aFlow = push_relabel(g, source, sink);
-    cout << "Actual Max Flow from 0 to 2: " << aFlow << "\n\n";
+    cout << "Actual Max Flow from Graph 1: " << aFlow << "\n";
+    print_residuals(g);
+    cout << "\n";
 
     // Example 2:
     Vertex D = add_vertex(g);
     addEdge(A, D, 15, g);
     addEdge(D, C, 10, g); 
 
-    eFlow = push_relabel_max_flow(g, source, sink);
-    cout << "Expected Max flow with branch (A -> B -> C, A -> D -> C): " << eFlow << "\n";
-    aFlow = push_relabel(g, source, sink);
-    cout << "Actual Max flow with branch (A -> B -> C, A -> D -> C): " << aFlow << "\n\n";
+    print_capacities(g);
 
-    // Example 3: TA suggestions
+    eFlow = push_relabel_max_flow(g, source, sink);
+    cout << "Expected Max flow from Graph 2: " << eFlow << "\n";
+    print_residuals(g);
+
+    aFlow = push_relabel(g, source, sink);
+    cout << "Actual Max flow from Graph 2: " << aFlow << "\n";
+    print_residuals(g);
+    cout << "\n";
+
+    // Example 3: TA Graph
     Graph g2;
     property_map<Graph, edge_capacity_t>::type capacity2 = get(edge_capacity, g2);
     property_map<Graph, edge_reverse_t>::type rev2 = get(edge_reverse, g2);
 
-    Vertex A2 = add_vertex(g2);
-    Vertex B2 = add_vertex(g2);
-    Vertex C2 = add_vertex(g2);
-    Vertex D2 = add_vertex(g2);
+    Vertex zero = add_vertex(g2);
+    Vertex one = add_vertex(g2);
+    Vertex two = add_vertex(g2);
+    Vertex three = add_vertex(g2);
+    Vertex four = add_vertex(g2);
+    Vertex five = add_vertex(g2);
 
-    addEdge(A2, B2, 10, g2);
-    addEdge(B2, C2, 5, g2);
-    addEdge(A2, D2, 15, g2);
-    addEdge(D2, C2, 10, g2);
+    addEdge(zero, one, 16, g2);
+    addEdge(zero, two, 13, g2);
+    addEdge(two, one, 4, g2);
+    addEdge(one, two, 10, g2);
+    addEdge(one, three, 12, g2);
+    addEdge(three, two, 9, g2);
+    addEdge(two, four, 14, g2);
+    addEdge(four, three, 7, g2);
+    addEdge(three, five, 20, g2);
+    addEdge(four, five, 4, g2);
+
+    ofstream dot_file("graph.dot");
+    write_graphviz(dot_file, g2);
+
+    print_capacities(g2);
+
+    source = zero; sink = five;
 
     eFlow = push_relabel_max_flow(g2, source, sink);
-    cout << "Expected Max flow from TA's Graph: " << eFlow << endl;
+    cout << "Expected Max flow from TA's Graph: " << eFlow << "\n";
+    print_residuals(g2);
+
     aFlow = push_relabel(g2, source, sink);
-    cout << "Actual Max flow from TA's Graph: " << aFlow << endl;
+    cout << "Actual Max flow from TA's Graph: " << aFlow << "\n";
+    print_residuals(g2);
+    cout << "\n";
 
     return 0;
 }

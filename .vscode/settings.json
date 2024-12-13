@@ -56,7 +56,9 @@
         "xtr1common": "cpp",
         "xutility": "cpp",
         "numeric": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "filesystem": "cpp",
+        "xhash": "cpp"
     },
     "C_Cpp.default.includePath": [
         "C:/boost_1_xx_0/boost_1_87_0"
