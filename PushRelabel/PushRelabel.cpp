@@ -191,11 +191,11 @@ int main() {
 
     Vertex source = A, sink = C;
     int eFlow = push_relabel_max_flow(g, source, sink);
-    cout << "Expected Max Flow from Graph 1: " << eFlow << "\n";
+    cout << "Expected Max Flow: " << eFlow << "\n";
     print_residuals(g);
 
     int aFlow = push_relabel(g, source, sink);
-    cout << "Actual Max Flow from Graph 1: " << aFlow << "\n";
+    cout << "Actual Max Flow: " << aFlow << "\n";
     print_residuals(g);
     cout << "\n";
 
@@ -207,11 +207,11 @@ int main() {
     print_capacities(g);
 
     eFlow = push_relabel_max_flow(g, source, sink);
-    cout << "Expected Max flow from Graph 2: " << eFlow << "\n";
+    cout << "Expected Max flow: " << eFlow << "\n";
     print_residuals(g);
 
     aFlow = push_relabel(g, source, sink);
-    cout << "Actual Max flow from Graph 2: " << aFlow << "\n";
+    cout << "Actual Max flow: " << aFlow << "\n";
     print_residuals(g);
     cout << "\n";
 
@@ -246,11 +246,11 @@ int main() {
     source = zero; sink = five;
 
     eFlow = push_relabel_max_flow(g2, source, sink);
-    cout << "Expected Max flow from TA's Graph: " << eFlow << "\n";
+    cout << "Expected Max flow: " << eFlow << "\n";
     print_residuals(g2);
 
     aFlow = push_relabel(g2, source, sink);
-    cout << "Actual Max flow from TA's Graph: " << aFlow << "\n";
+    cout << "Actual Max flow: " << aFlow << "\n";
     print_residuals(g2);
     cout << "\n";
 
